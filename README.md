@@ -1,4 +1,8 @@
-Use dummy login details username: aaa 
+Use dummy login details username: aaa , no password.
+in stores tab, clicking on a row with the store name allows you to edit details. you can also create a new store/location.
+create and edit deals pending. 
+
+
 
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
