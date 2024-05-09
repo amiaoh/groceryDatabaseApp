@@ -5,5 +5,5 @@ export const FormGroup = styled(Form.Group)`
   display: flex;
   flex-direction: column;
   font-size: 12px;
-  margin-bottom: 20px;
+  margin: 10px;
 `;

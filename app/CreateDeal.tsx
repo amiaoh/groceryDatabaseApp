@@ -1,4 +1,4 @@
-import { ReactElement, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { Wrapper } from "./ui/Wrapper";
 import { greenActiveButton, greyInactiveButton } from "./ui/colourLibrary";
 import { LargeButton } from "./ui/LargeButton";
@@ -10,9 +10,12 @@ import { FormControlString } from "./ui/FormControlString";
 import { InputGroup } from "react-bootstrap";
 import { FormControlNumber } from "./ui/FormControlNumber";
 import { FormCheckRadio } from "./ui/FormCheckRadio";
-import { Unit } from "./types";
+import { Store, Unit } from "./types";
+import { getStores } from "@/server/getStores";
+import { createNewDeal } from "@/server/createNewDeal";
+import { itemAlreadyExists } from "@/server/itemAlreadyExists";
 
-const units:Unit[]=["kg","L","unit"]
+const units: Unit[] = ["kg", "L", "unit"];
 
 export function CreateDeal(props: {
   onCreateDealClick: () => void;
@@ -21,9 +24,24 @@ export function CreateDeal(props: {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [itemName, setItemName] = useState<string>("");
   const [pricePerUnit, setPricePerUnit] = useState<string>("0");
-  const [selectedUnit, setSelectedUnit] = useState<Unit|undefined>(undefined);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedStoreId, setSelectedStoreId] = useState<
+    Store["id"] | undefined
+  >(undefined);
   const [awaitingCreateDealCheck, setAwaitingCreateDealCheck] = useState(false);
   const { onCancelClick, onCreateDealClick } = props;
+  const [stores, setStores] = useState<Store[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await getStores();
+      setStores(result);
+    };
+    fetchData();
+  }, []);
 
   return (
     <Wrapper>
@@ -67,20 +85,45 @@ export function CreateDeal(props: {
             </FormGroup>
             <FormGroup>
               <FormLabel>Unit</FormLabel>
-              {units.map((unit:Unit) => {
+              {units.map((unit: Unit) => {
                 return (
                   <FormCheckRadio
                     key={unit}
-                    onChange={(newUnit) => {
-                      setSelectedUnit(newUnit);
+                    onClick={() => {
+                      setSelectedUnit(unit);
                     }}
-                    unit={unit}
-                    value={selectedUnit}
+                    label={unit}
+                    value={unit === selectedUnit}
                   />
                 );
               })}
             </FormGroup>
+            <FormGroup>
+              <FormLabel>Date the deal observed</FormLabel>
+              <input
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                }}
+                style={{ padding: 5 }}
+                type="date"
+              ></input>
+            </FormGroup>
           </div>
+          <FormGroup>
+            <FormLabel>Store</FormLabel>
+            {stores.map((store: Store) => {
+              return (
+                <FormCheckRadio
+                  key={store.id}
+                  onClick={() => {
+                    setSelectedStoreId(store.id);
+                  }}
+                  label={store.displayName}
+                  value={selectedStoreId === store.id}
+                />
+              );
+            })}
+          </FormGroup>
         </StyledForm>
       </div>
       {errorMessage}
@@ -104,6 +147,38 @@ export function CreateDeal(props: {
             if (pricePerUnit === "0") {
               return setErrorMessage("Price cannot be $0");
             }
+            if (selectedUnit === undefined) {
+              return setErrorMessage("Must select a unit");
+            }
+            if (selectedStoreId === undefined) {
+              return setErrorMessage("Must select a store");
+            }
+            if (selectedDate === undefined) {
+              return setErrorMessage("Must select a date");
+            }
+            setErrorMessage("");
+            setAwaitingCreateDealCheck(true);
+            if (
+              await itemAlreadyExists(
+                itemName,
+                Number(pricePerUnit),
+                selectedStoreId
+              )
+            ) {
+              setAwaitingCreateDealCheck(false);
+              return setErrorMessage(
+                "An item with the same details already exists"
+              );
+            }
+            onCreateDealClick();
+            createNewDeal(
+              itemName,
+              Number(pricePerUnit),
+              selectedUnit,
+              new Date(selectedDate),
+              selectedStoreId
+            );
+            setAwaitingCreateDealCheck(false);
           }}
           backgroundColor={greenActiveButton}
         >

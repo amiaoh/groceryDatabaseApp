@@ -19,6 +19,7 @@ export function FormControlString(
         height: 32,
         background: greyButtonBackground,
         borderRadius: 12,
+        padding: 5,
       }}
     ></Form.Control>
   );
