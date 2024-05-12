@@ -22,7 +22,7 @@ export function Deals(): ReactElement {
       )}
       {dealsPage === DealsPage.Create && (
         <CreateDeal
-          onCreateDealClick={() => {
+          onCreateDealSuccess={() => {
             setDealsPage(DealsPage.View);
           }}
           onCancelClick={() => {

@@ -18,7 +18,7 @@ import { itemAlreadyExists } from "@/server/itemAlreadyExists";
 const units: Unit[] = ["kg", "L", "unit"];
 
 export function CreateDeal(props: {
-  onCreateDealClick: () => void;
+  onCreateDealSuccess: () => void;
   onCancelClick: () => void;
 }): ReactElement {
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -32,7 +32,7 @@ export function CreateDeal(props: {
     Store["id"] | undefined
   >(undefined);
   const [awaitingCreateDealCheck, setAwaitingCreateDealCheck] = useState(false);
-  const { onCancelClick, onCreateDealClick } = props;
+  const { onCancelClick, onCreateDealSuccess: onCreateDealSuccess } = props;
   const [stores, setStores] = useState<Store[]>([]);
 
   useEffect(() => {
@@ -170,8 +170,7 @@ export function CreateDeal(props: {
                 "An item with the same details already exists"
               );
             }
-            onCreateDealClick();
-            createNewDeal(
+            await createNewDeal(
               itemName,
               Number(pricePerUnit),
               selectedUnit,
@@ -179,6 +178,7 @@ export function CreateDeal(props: {
               selectedStoreId
             );
             setAwaitingCreateDealCheck(false);
+            onCreateDealSuccess();
           }}
           backgroundColor={greenActiveButton}
         >
