@@ -8,7 +8,7 @@ export async function itemAlreadyExists(
   storeID: string
 ): Promise<boolean> {
   const result = await prisma.deal.findFirst({
-    where: { item: item, pricePerUnit: pricePerUnit, storeID: storeID },
+    where: { item, pricePerUnit, storeID },
   });
   return result !== null;
 }
