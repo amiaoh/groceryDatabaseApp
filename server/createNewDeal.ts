@@ -11,11 +11,11 @@ export async function createNewDeal(
 ) {
   await prisma.deal.create({
     data: {
-      item: item,
-      pricePerUnit: pricePerUnit,
-      unitType: unitType,
-      dateObserved: dateObserved,
-      storeID: storeID,
+      item,
+      pricePerUnit,
+      unitType,
+      dateObserved,
+      storeID,
     },
   });
 }
