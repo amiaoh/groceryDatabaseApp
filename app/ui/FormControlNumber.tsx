@@ -27,6 +27,7 @@ export function FormControlNumber(
         background: greyButtonBackground,
         borderRadius: 12,
         marginRight: 20,
+        padding: 5,
       }}
     ></Form.Control>
   );

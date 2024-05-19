@@ -19,3 +19,4 @@ export type Deal = {
   dateObserved: Date;
   storeID: string;
 };
+
