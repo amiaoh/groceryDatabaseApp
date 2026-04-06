@@ -1,0 +1,32 @@
+{
+  "name": "@grocery/backend",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push --force",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@grocery/shared": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "@hono/zod-validator": "^0.7.6",
+    "@neondatabase/serverless": "^0.10.0",
+    "better-auth": "^1.2.0",
+    "drizzle-orm": "^0.41.0",
+    "drizzle-zod": "^0.7.0",
+    "hono": "^4.7.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  }
+}
