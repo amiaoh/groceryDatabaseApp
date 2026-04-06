@@ -1,10 +1,41 @@
 import { z } from "zod"
 
 // Enums
-export const unitTypeSchema = z.enum(["kg", "L", "unit"])
+export const unitTypeSchema = z.enum([
+  "kg",
+  "g",
+  "L",
+  "mL",
+  "unit",
+  "dozen",
+  "packet",
+  "can",
+  "bottle",
+])
+
+export const categorySchema = z.enum([
+  "Fruit & Vegetables",
+  "Dairy",
+  "Meat",
+  "Frozen",
+  "Pantry",
+  "Household",
+  "Health & Beauty",
+  "Other",
+])
+
 export const priceSourceSchema = z.enum(["manual", "scraped"])
 
+// Unit types where the user can optionally specify package size (e.g. "400g", "375mL")
+export const UNITS_WITH_PACKAGE_DETAIL = new Set<UnitType>([
+  "packet",
+  "can",
+  "bottle",
+  "dozen",
+])
+
 export type UnitType = z.infer<typeof unitTypeSchema>
+export type Category = z.infer<typeof categorySchema>
 export type PriceSource = z.infer<typeof priceSourceSchema>
 
 // StoreChain
@@ -44,7 +75,8 @@ export const productSchema = z.object({
   id: z.string(),
   name: z.string(),
   unitType: unitTypeSchema,
-  category: z.string().nullable(),
+  category: categorySchema.nullable(),
+  packageDetail: z.string().nullable(),
 })
 
 export const createProductSchema = productSchema.omit({ id: true })
@@ -57,6 +89,7 @@ export const priceRecordSchema = z.object({
   id: z.string(),
   productId: z.string(),
   storeLocationId: z.string(),
+  brand: z.string().nullable(),
   price: z.number().positive(),
   isSpecial: z.boolean(),
   validUntil: z.string().nullable(),
@@ -81,9 +114,10 @@ export type PriceRecord = z.infer<typeof priceRecordSchema>
 export type CreatePriceRecord = z.infer<typeof createPriceRecordSchema>
 export type PriceRecordWithDetails = z.infer<typeof priceRecordWithDetailsSchema>
 
-// Search result — cheapest stores for a product
+// Search result — cheapest deals for a product (one entry per store+brand combination)
 export const cheapestStoreSchema = z.object({
   storeLocation: storeLocationWithChainSchema,
+  brand: z.string().nullable(),
   price: z.number(),
   isSpecial: z.boolean(),
   recordedAt: z.string(),

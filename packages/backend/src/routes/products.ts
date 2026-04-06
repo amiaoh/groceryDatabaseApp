@@ -6,6 +6,10 @@ import { db } from "../db/index.ts"
 import { products } from "../db/schema.ts"
 import { requireAuth } from "../middleware/auth.ts"
 
+function capitalizeWords(str: string): string {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
 export const productsRouter = new Hono()
 
 productsRouter.get("/", requireAuth, async (c) => {
@@ -28,7 +32,7 @@ productsRouter.post(
     const body = c.req.valid("json")
     const [product] = await db
       .insert(products)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({ id: crypto.randomUUID(), ...body, name: capitalizeWords(body.name) })
       .returning()
     return c.json(product, 201)
   }
@@ -43,7 +47,7 @@ productsRouter.patch(
     const body = c.req.valid("json")
     const [product] = await db
       .update(products)
-      .set(body)
+      .set({ ...body, ...(body.name ? { name: capitalizeWords(body.name) } : {}) })
       .where(eq(products.id, id))
       .returning()
     if (!product) return c.json({ error: "Product not found" }, 404)

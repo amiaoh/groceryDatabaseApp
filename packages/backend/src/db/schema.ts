@@ -9,7 +9,29 @@ import {
 } from "drizzle-orm/pg-core"
 
 // Enums
-export const unitTypeEnum = pgEnum("unit_type", ["kg", "L", "unit"])
+export const unitTypeEnum = pgEnum("unit_type", [
+  "kg",
+  "g",
+  "L",
+  "mL",
+  "unit",
+  "dozen",
+  "packet",
+  "can",
+  "bottle",
+])
+
+export const categoryEnum = pgEnum("category", [
+  "Fruit & Vegetables",
+  "Dairy",
+  "Meat",
+  "Frozen",
+  "Pantry",
+  "Household",
+  "Health & Beauty",
+  "Other",
+])
+
 export const priceSourceEnum = pgEnum("price_source", ["manual", "scraped"])
 
 // Better Auth tables
@@ -83,7 +105,8 @@ export const products = pgTable("product", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   unitType: unitTypeEnum("unit_type").notNull(),
-  category: text("category"),
+  category: categoryEnum("category"),
+  packageDetail: text("package_detail"),
 })
 
 export const priceRecords = pgTable("price_record", {
@@ -94,6 +117,7 @@ export const priceRecords = pgTable("price_record", {
   storeLocationId: text("store_location_id")
     .notNull()
     .references(() => storeLocations.id),
+  brand: text("brand"),
   price: doublePrecision("price").notNull(),
   isSpecial: boolean("is_special").notNull().default(false),
   validUntil: date("valid_until"),
@@ -103,19 +127,3 @@ export const priceRecords = pgTable("price_record", {
   userId: text("user_id").references(() => authUsers.id),
 })
 
-// Legacy tables — kept temporarily for migration, remove after running migrate-legacy.ts
-export const legacyStores = pgTable("Store", {
-  id: text("id").primaryKey(),
-  displayName: text("displayName").notNull().unique(),
-  fullName: text("fullName").notNull(),
-  suburb: text("suburb").notNull(),
-})
-
-export const legacyDeals = pgTable("Deal", {
-  id: text("id").primaryKey(),
-  item: text("item").notNull(),
-  pricePerUnit: doublePrecision("pricePerUnit").notNull(),
-  unitType: text("unitType").notNull(),
-  dateObserved: date("dateObserved").notNull(),
-  storeId: text("storeID").notNull(),
-})

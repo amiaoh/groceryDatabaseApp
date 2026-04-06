@@ -1,12 +1,22 @@
 import { Hono } from "hono"
 import { zValidator } from "@hono/zod-validator"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, isNotNull } from "drizzle-orm"
 import { createPriceRecordSchema } from "@grocery/shared"
 import { db } from "../db/index.ts"
 import { priceRecords, storeLocations, storeChains, products } from "../db/schema.ts"
 import { requireAuth } from "../middleware/auth.ts"
 
 export const priceRecordsRouter = new Hono()
+
+// GET /api/price-records/brands — all distinct brand values
+priceRecordsRouter.get("/brands", requireAuth, async (c) => {
+  const rows = await db
+    .selectDistinct({ brand: priceRecords.brand })
+    .from(priceRecords)
+    .where(isNotNull(priceRecords.brand))
+    .orderBy(priceRecords.brand)
+  return c.json(rows.map((r) => r.brand).filter(Boolean))
+})
 
 // GET /api/price-records?productId=... — full price history for a product
 priceRecordsRouter.get("/", requireAuth, async (c) => {
@@ -46,18 +56,21 @@ priceRecordsRouter.get("/cheapest", requireAuth, async (c) => {
     .where(eq(priceRecords.productId, productId))
     .orderBy(desc(priceRecords.recordedAt))
 
-  const latestPerStore = new Map<string, typeof rows[0]>()
+  // Deduplicate to most recent price per (store, brand) combination
+  const latestPerStoreBrand = new Map<string, typeof rows[0]>()
   for (const row of rows) {
-    if (!latestPerStore.has(row.store_location.id)) {
-      latestPerStore.set(row.store_location.id, row)
+    const key = `${row.store_location.id}:${row.price_record.brand ?? ""}`
+    if (!latestPerStoreBrand.has(key)) {
+      latestPerStoreBrand.set(key, row)
     }
   }
 
-  const cheapest = [...latestPerStore.values()]
+  const cheapest = [...latestPerStoreBrand.values()]
     .sort((a, b) => a.price_record.price - b.price_record.price)
     .slice(0, 3)
     .map((row) => ({
       storeLocation: { ...row.store_location, chain: row.store_chain ?? null },
+      brand: row.price_record.brand,
       price: row.price_record.price,
       isSpecial: row.price_record.isSpecial,
       recordedAt: row.price_record.recordedAt,
