@@ -5,6 +5,12 @@ import * as schema from "./db/schema.ts"
 
 export const auth = betterAuth({
   trustedOrigins: [process.env.FRONTEND_URL ?? "http://localhost:5173"],
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
