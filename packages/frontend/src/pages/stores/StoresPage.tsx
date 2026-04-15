@@ -1,10 +1,11 @@
 import { ReactElement, useEffect, useState } from "react"
+import {
+  Box, Flex, Text, Button, Input, Field,
+  Card, Skeleton, VStack, Tabs, EmptyState,
+} from "@chakra-ui/react"
 import { StoreChain, StoreLocationWithChain, CreateStoreLocation, CreateStoreChain } from "@grocery/shared"
 import {
-  getStoreLocations,
-  createStoreLocation,
-  updateStoreLocation,
-  deleteStoreLocation,
+  getStoreLocations, createStoreLocation, updateStoreLocation, deleteStoreLocation,
 } from "../../api/store-locations"
 import { getStoreChains, createStoreChain, updateStoreChain } from "../../api/store-chains"
 
@@ -14,12 +15,18 @@ type Tab = "locations" | "chains"
 type LocationFormMode = { type: "create" } | { type: "edit"; location: StoreLocationWithChain }
 type ChainFormMode = { type: "create" } | { type: "edit"; chain: StoreChain }
 
+const styles = {
+  listCard: { padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 } as React.CSSProperties,
+  selectNative: { width: "100%", height: 40, padding: "0 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 16, fontFamily: "inherit", backgroundColor: "#fff" } as React.CSSProperties,
+}
+
 export function StoresPage(): ReactElement {
   const [tab, setTab] = useState<Tab>("locations")
   const [locations, setLocations] = useState<StoreLocationWithChain[]>([])
   const [chains, setChains] = useState<StoreChain[]>([])
   const [locationForm, setLocationForm] = useState<LocationFormMode | null>(null)
   const [chainForm, setChainForm] = useState<ChainFormMode | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const reload = async () => {
     const [locs, chs] = await Promise.all([getStoreLocations(), getStoreChains()])
@@ -27,89 +34,58 @@ export function StoresPage(): ReactElement {
     setChains(chs)
   }
 
-  useEffect(() => { reload() }, [])
+  useEffect(() => { reload().finally(() => setIsLoading(false)) }, [])
+
+  if (isLoading) {
+    return (
+      <VStack gap={2.5}>
+        {[1, 2, 3, 4].map((i) => <Skeleton key={i} height="64px" borderRadius="14px" w="full" />)}
+      </VStack>
+    )
+  }
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: "16px", marginBottom: "16px", borderBottom: "1px solid #ddd" }}>
-        {(["locations", "chains"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); setLocationForm(null); setChainForm(null) }}
-            style={{
-              padding: "8px 0",
-              background: "none",
-              border: "none",
-              borderBottom: tab === t ? "2px solid #111" : "2px solid transparent",
-              fontWeight: tab === t ? "bold" : "normal",
-              cursor: "pointer",
-              textTransform: "capitalize",
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+    <Box>
+      <Tabs.Root value={tab} onValueChange={(e) => { setTab(e.value as Tab); setLocationForm(null); setChainForm(null) }}>
+        <Tabs.List mb={5}>
+          <Tabs.Trigger value="locations">Locations</Tabs.Trigger>
+          <Tabs.Trigger value="chains">Chains</Tabs.Trigger>
+        </Tabs.List>
 
-      {tab === "locations" && (
-        <div>
+        <Tabs.Content value="locations">
           {locationForm ? (
-            <LocationForm
-              mode={locationForm}
-              chains={chains}
-              onSuccess={() => { reload(); setLocationForm(null) }}
-              onCancel={() => setLocationForm(null)}
-            />
+            <LocationForm mode={locationForm} chains={chains} onSuccess={() => { reload(); setLocationForm(null) }} onCancel={() => setLocationForm(null)} />
           ) : (
             <>
-              <button
-                onClick={() => setLocationForm({ type: "create" })}
-                style={{ marginBottom: "12px" }}
-              >
+              <Button colorPalette="green" w="full" mb={4} onClick={() => setLocationForm({ type: "create" })}>
                 + Add store
-              </button>
+              </Button>
               <LocationList
                 locations={locations}
                 onEdit={(loc) => setLocationForm({ type: "edit", location: loc })}
                 onDelete={async (id) => {
-                  try {
-                    await deleteStoreLocation(id)
-                    reload()
-                  } catch {
-                    alert("Cannot delete — this store has price records attached to it.")
-                  }
+                  try { await deleteStoreLocation(id); reload() }
+                  catch { alert("Cannot delete — this store has price records attached to it.") }
                 }}
               />
             </>
           )}
-        </div>
-      )}
+        </Tabs.Content>
 
-      {tab === "chains" && (
-        <div>
+        <Tabs.Content value="chains">
           {chainForm ? (
-            <ChainForm
-              mode={chainForm}
-              onSuccess={() => { reload(); setChainForm(null) }}
-              onCancel={() => setChainForm(null)}
-            />
+            <ChainForm mode={chainForm} onSuccess={() => { reload(); setChainForm(null) }} onCancel={() => setChainForm(null)} />
           ) : (
             <>
-              <button
-                onClick={() => setChainForm({ type: "create" })}
-                style={{ marginBottom: "12px" }}
-              >
+              <Button colorPalette="green" w="full" mb={4} onClick={() => setChainForm({ type: "create" })}>
                 + Add chain
-              </button>
-              <ChainList
-                chains={chains}
-                onEdit={(chain) => setChainForm({ type: "edit", chain })}
-              />
+              </Button>
+              <ChainList chains={chains} onEdit={(chain) => setChainForm({ type: "edit", chain })} />
             </>
           )}
-        </div>
-      )}
-    </div>
+        </Tabs.Content>
+      </Tabs.Root>
+    </Box>
   )
 }
 
@@ -120,44 +96,45 @@ function LocationList(props: {
 }): ReactElement {
   const { locations, onEdit, onDelete } = props
 
-  if (locations.length === 0) return <p>No stores yet.</p>
+  if (locations.length === 0) {
+    return (
+      <EmptyState.Root border="1.5px dashed" borderColor="gray.200" borderRadius="14px" py={10}>
+        <EmptyState.Content>
+          <EmptyState.Indicator fontSize="32px">🏪</EmptyState.Indicator>
+          <VStack gap={1}>
+            <EmptyState.Title>No stores yet</EmptyState.Title>
+            <EmptyState.Description>Add your first store above</EmptyState.Description>
+          </VStack>
+        </EmptyState.Content>
+      </EmptyState.Root>
+    )
+  }
 
   return (
-    <div>
+    <VStack gap={2} align="stretch">
       {locations.map((loc) => (
-        <div
-          key={loc.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 12px",
-            marginBottom: "6px",
-            border: "1px solid #eee",
-            borderRadius: "4px",
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: "bold" }}>{loc.name}</div>
-            <div style={{ color: "#666", fontSize: "13px" }}>
+        <Card.Root key={loc.id} style={styles.listCard}>
+          <Box flex={1} minWidth={0}>
+            <Text fontWeight="600" fontSize="15px">{loc.name}</Text>
+            <Text color="gray.500" fontSize="13px" mt={0.5}>
               {[loc.suburb, loc.state].filter(Boolean).join(", ")}
-              {loc.chain && ` · ${loc.chain.name}`}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={() => onEdit(loc)}>Edit</button>
-            <button
-              onClick={() => {
-                if (confirm(`Delete ${loc.name}?`)) onDelete(loc.id)
-              }}
-              style={{ color: "#ef4444" }}
+              {loc.chain && <Text as="span" color="gray.400"> · {loc.chain.name}</Text>}
+            </Text>
+          </Box>
+          <Flex gap={1.5} flexShrink={0}>
+            <Button size="sm" variant="outline" onClick={() => onEdit(loc)}>Edit</Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              color="red.500"
+              onClick={() => { if (confirm(`Delete ${loc.name}?`)) onDelete(loc.id) }}
             >
               Delete
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Flex>
+        </Card.Root>
       ))}
-    </div>
+    </VStack>
   )
 }
 
@@ -181,23 +158,12 @@ function LocationForm(props: {
   const handleSubmit = async () => {
     if (!name.trim()) return setErrorMessage("Name cannot be empty")
     if (!suburb.trim()) return setErrorMessage("Suburb cannot be empty")
-
-    const payload: CreateStoreLocation = {
-      name: name.trim(),
-      chainId: chainId || null,
-      suburb: suburb.trim(),
-      state: state || null,
-      address: address.trim() || null,
-    }
-
+    const payload: CreateStoreLocation = { name: name.trim(), chainId: chainId || null, suburb: suburb.trim(), state: state || null, address: address.trim() || null }
     setIsSubmitting(true)
     setErrorMessage("")
     try {
-      if (mode.type === "create") {
-        await createStoreLocation(payload)
-      } else {
-        await updateStoreLocation(mode.location.id, payload)
-      }
+      if (mode.type === "create") await createStoreLocation(payload)
+      else await updateStoreLocation(mode.location.id, payload)
       onSuccess()
     } catch {
       setErrorMessage("Failed to save — the store name may already exist")
@@ -207,121 +173,88 @@ function LocationForm(props: {
   }
 
   return (
-    <div>
-      <h3>{mode.type === "create" ? "Add store" : "Edit store"}</h3>
+    <Box>
+      <Button variant="ghost" size="sm" mb={5} px={0} color="gray.500" onClick={onCancel}>← Back</Button>
+      <Text fontSize="18px" fontWeight="700" letterSpacing="-0.2px" mb={5}>
+        {mode.type === "create" ? "Add store" : "Edit store"}
+      </Text>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Coles Richmond Traders"
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
+      <Field.Root mb={4}>
+        <Field.Label fontWeight="500">Name</Field.Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coles Richmond Traders" />
+      </Field.Root>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Chain (optional)</label>
-        <select
-          value={chainId}
-          onChange={(e) => setChainId(e.target.value)}
-          style={{ width: "100%", padding: "8px" }}
-        >
+      <Field.Root mb={4}>
+        <Field.Label fontWeight="500">Chain <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+        <select value={chainId} onChange={(e) => setChainId(e.target.value)} style={styles.selectNative}>
           <option value="">Independent store</option>
-          {chains.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
+          {chains.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-      </div>
+      </Field.Root>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Suburb</label>
-        <input
-          type="text"
-          value={suburb}
-          onChange={(e) => setSuburb(e.target.value)}
-          placeholder="e.g. Richmond"
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
+      <Field.Root mb={4}>
+        <Field.Label fontWeight="500">Suburb</Field.Label>
+        <Input value={suburb} onChange={(e) => setSuburb(e.target.value)} placeholder="e.g. Richmond" />
+      </Field.Root>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>State (optional)</label>
-        <select
-          value={state}
-          onChange={(e) => setState(e.target.value)}
-          style={{ padding: "8px" }}
-        >
+      <Field.Root mb={4}>
+        <Field.Label fontWeight="500">State <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+        <select value={state} onChange={(e) => setState(e.target.value)} style={styles.selectNative}>
           <option value="">—</option>
           {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-      </div>
+      </Field.Root>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Address (optional)</label>
-        <input
-          type="text"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="e.g. 123 Bridge Rd"
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
+      <Field.Root mb={5}>
+        <Field.Label fontWeight="500">Address <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+        <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="e.g. 123 Bridge Rd" />
+      </Field.Root>
 
-      {errorMessage && <p style={{ color: "#ef4444" }}>{errorMessage}</p>}
+      {errorMessage && <Text color="red.500" fontSize="14px" mb={4}>{errorMessage}</Text>}
 
-      <div style={{ display: "flex", gap: "8px" }}>
-        <button onClick={onCancel} disabled={isSubmitting}>Cancel</button>
-        <button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : mode.type === "create" ? "Add store" : "Save changes"}
-        </button>
-      </div>
-    </div>
+      <Flex gap={2.5}>
+        <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+        <Button colorPalette="green" flex={1} onClick={handleSubmit} loading={isSubmitting} loadingText="Saving…">
+          {mode.type === "create" ? "Add store" : "Save changes"}
+        </Button>
+      </Flex>
+    </Box>
   )
 }
 
-function ChainList(props: {
-  chains: StoreChain[]
-  onEdit: (chain: StoreChain) => void
-}): ReactElement {
+function ChainList(props: { chains: StoreChain[]; onEdit: (chain: StoreChain) => void }): ReactElement {
   const { chains, onEdit } = props
 
-  if (chains.length === 0) return <p>No chains yet.</p>
+  if (chains.length === 0) {
+    return (
+      <EmptyState.Root border="1.5px dashed" borderColor="gray.200" borderRadius="14px" py={10}>
+        <EmptyState.Content>
+          <EmptyState.Indicator fontSize="32px">🔗</EmptyState.Indicator>
+          <VStack gap={1}>
+            <EmptyState.Title>No chains yet</EmptyState.Title>
+            <EmptyState.Description>Add store chains like Coles or Woolworths</EmptyState.Description>
+          </VStack>
+        </EmptyState.Content>
+      </EmptyState.Root>
+    )
+  }
 
   return (
-    <div>
+    <VStack gap={2} align="stretch">
       {chains.map((chain) => (
-        <div
-          key={chain.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 12px",
-            marginBottom: "6px",
-            border: "1px solid #eee",
-            borderRadius: "4px",
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: "bold" }}>{chain.name}</div>
-            {chain.websiteUrl && (
-              <div style={{ color: "#666", fontSize: "13px" }}>{chain.websiteUrl}</div>
-            )}
-          </div>
-          <button onClick={() => onEdit(chain)}>Edit</button>
-        </div>
+        <Card.Root key={chain.id} style={styles.listCard}>
+          <Box>
+            <Text fontWeight="600" fontSize="15px">{chain.name}</Text>
+            {chain.websiteUrl && <Text color="gray.400" fontSize="13px" mt={0.5}>{chain.websiteUrl}</Text>}
+          </Box>
+          <Button size="sm" variant="outline" onClick={() => onEdit(chain)}>Edit</Button>
+        </Card.Root>
       ))}
-    </div>
+    </VStack>
   )
 }
 
-function ChainForm(props: {
-  mode: ChainFormMode
-  onSuccess: () => void
-  onCancel: () => void
-}): ReactElement {
+function ChainForm(props: { mode: ChainFormMode; onSuccess: () => void; onCancel: () => void }): ReactElement {
   const { mode, onSuccess, onCancel } = props
   const existing = mode.type === "edit" ? mode.chain : null
 
@@ -332,20 +265,12 @@ function ChainForm(props: {
 
   const handleSubmit = async () => {
     if (!name.trim()) return setErrorMessage("Name cannot be empty")
-
-    const payload: CreateStoreChain = {
-      name: name.trim(),
-      websiteUrl: websiteUrl.trim() || null,
-    }
-
+    const payload: CreateStoreChain = { name: name.trim(), websiteUrl: websiteUrl.trim() || null }
     setIsSubmitting(true)
     setErrorMessage("")
     try {
-      if (mode.type === "create") {
-        await createStoreChain(payload)
-      } else {
-        await updateStoreChain(mode.chain.id, payload)
-      }
+      if (mode.type === "create") await createStoreChain(payload)
+      else await updateStoreChain(mode.chain.id, payload)
       onSuccess()
     } catch {
       setErrorMessage("Failed to save — the chain name may already exist")
@@ -355,39 +280,30 @@ function ChainForm(props: {
   }
 
   return (
-    <div>
-      <h3>{mode.type === "create" ? "Add chain" : "Edit chain"}</h3>
+    <Box>
+      <Button variant="ghost" size="sm" mb={5} px={0} color="gray.500" onClick={onCancel}>← Back</Button>
+      <Text fontSize="18px" fontWeight="700" letterSpacing="-0.2px" mb={5}>
+        {mode.type === "create" ? "Add chain" : "Edit chain"}
+      </Text>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Woolworths"
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
+      <Field.Root mb={4}>
+        <Field.Label fontWeight="500">Name</Field.Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Woolworths" autoFocus />
+      </Field.Root>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Website URL (optional)</label>
-        <input
-          type="text"
-          value={websiteUrl}
-          onChange={(e) => setWebsiteUrl(e.target.value)}
-          placeholder="https://www.woolworths.com.au"
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
+      <Field.Root mb={5}>
+        <Field.Label fontWeight="500">Website URL <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+        <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.woolworths.com.au" />
+      </Field.Root>
 
-      {errorMessage && <p style={{ color: "#ef4444" }}>{errorMessage}</p>}
+      {errorMessage && <Text color="red.500" fontSize="14px" mb={4}>{errorMessage}</Text>}
 
-      <div style={{ display: "flex", gap: "8px" }}>
-        <button onClick={onCancel} disabled={isSubmitting}>Cancel</button>
-        <button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : mode.type === "create" ? "Add chain" : "Save changes"}
-        </button>
-      </div>
-    </div>
+      <Flex gap={2.5}>
+        <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+        <Button colorPalette="green" flex={1} onClick={handleSubmit} loading={isSubmitting} loadingText="Saving…">
+          {mode.type === "create" ? "Add chain" : "Save changes"}
+        </Button>
+      </Flex>
+    </Box>
   )
 }

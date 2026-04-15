@@ -1,4 +1,8 @@
 import { ReactElement, useEffect, useState } from "react"
+import {
+  Box, Flex, Text, Button, Input, Field,
+  Skeleton, VStack, Checkbox,
+} from "@chakra-ui/react"
 import { Product, StoreChain, StoreLocationWithChain } from "@grocery/shared"
 import { getStoreLocations, createStoreLocation } from "../../api/store-locations"
 import { getStoreChains } from "../../api/store-chains"
@@ -6,6 +10,12 @@ import { getBrands, createPriceRecord } from "../../api/price-records"
 import { SearchSelect } from "../../components/SearchSelect"
 
 const AU_STATES = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]
+
+const styles = {
+  inlineStoreBox: { padding: "16px", border: "1.5px solid #e2e8f0", borderRadius: "14px", backgroundColor: "#f8fafc" } as React.CSSProperties,
+  selectNative: { width: "100%", height: 40, padding: "0 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 16, fontFamily: "inherit", backgroundColor: "#fff" } as React.CSSProperties,
+  selectNativeSmall: { height: 36, padding: "0 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 15, fontFamily: "inherit", backgroundColor: "#fff" } as React.CSSProperties,
+}
 
 export function AddObservation(props: {
   product: Product
@@ -20,8 +30,8 @@ export function AddObservation(props: {
   const [brand, setBrand] = useState("")
   const [price, setPrice] = useState("")
   const [isSpecial, setIsSpecial] = useState(false)
-  const [validUntil, setValidUntil] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showCreateStore, setShowCreateStore] = useState(false)
 
@@ -32,9 +42,12 @@ export function AddObservation(props: {
   }
 
   useEffect(() => {
-    reloadStores()
-    getStoreChains().then(setChains)
-    getBrands().then(setBrands)
+    Promise.all([reloadStores(), getStoreChains(), getBrands()])
+      .then(([, fetchedChains, fetchedBrands]) => {
+        setChains(fetchedChains)
+        setBrands(fetchedBrands)
+      })
+      .finally(() => setIsLoading(false))
   }, [])
 
   const handleStoreCreated = async (newLocation: StoreLocationWithChain) => {
@@ -47,9 +60,7 @@ export function AddObservation(props: {
   const handleSubmit = async () => {
     if (!storeLocationId) return setErrorMessage("Select a store")
     const parsedPrice = parseFloat(price)
-    if (!price || isNaN(parsedPrice) || parsedPrice <= 0)
-      return setErrorMessage("Enter a valid price")
-
+    if (!price || isNaN(parsedPrice) || parsedPrice <= 0) return setErrorMessage("Enter a valid price")
     setIsSubmitting(true)
     setErrorMessage("")
     try {
@@ -59,7 +70,6 @@ export function AddObservation(props: {
         brand: brand.trim() || null,
         price: parsedPrice,
         isSpecial,
-        validUntil: isSpecial && validUntil ? validUntil : null,
         source: "manual",
         productUrl: null,
       })
@@ -71,106 +81,105 @@ export function AddObservation(props: {
     }
   }
 
-  const storeOptions = storeLocations.map((loc) => ({
-    value: loc.id,
-    label: `${loc.name} — ${loc.suburb}`,
-  }))
-
+  const storeOptions = storeLocations.map((loc) => ({ value: loc.id, label: `${loc.name} — ${loc.suburb}` }))
   const brandOptions = brands.map((b) => ({ value: b, label: b }))
 
   return (
-    <div>
-      <h2>Add price for {product.name}</h2>
+    <Box>
+      <Button variant="ghost" size="sm" mb={5} px={0} color="gray.500" onClick={onCancel}>← Back</Button>
+      <Text fontSize="20px" fontWeight="700" letterSpacing="-0.3px" mb={5}>
+        Add price for <Text as="span" color="green.600">{product.name}</Text>
+      </Text>
 
-      <div style={{ marginBottom: "12px" }}>
-        <label style={{ display: "block", marginBottom: "4px" }}>Store</label>
-        {showCreateStore ? (
-          <InlineCreateStore
-            chains={chains}
-            onSuccess={handleStoreCreated}
-            onCancel={() => setShowCreateStore(false)}
-          />
-        ) : (
-          <SearchSelect
-            options={storeOptions}
-            value={storeLocationId}
-            onChange={setStoreLocationId}
-            onCreateNew={() => setShowCreateStore(true)}
-            createNewLabel={() => "+ Create new store"}
-            placeholder="Search for a store..."
-          />
-        )}
-      </div>
-
-      {!showCreateStore && (
+      {isLoading ? (
+        <ObservationFormSkeleton />
+      ) : (
         <>
-          <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", marginBottom: "4px" }}>Brand (optional)</label>
-            <SearchSelect
-              options={brandOptions}
-              value={brand}
-              onChange={setBrand}
-              onCreateNew={(input) => {
-                setBrand(input)
-                if (!brands.includes(input)) setBrands([...brands, input].sort())
-              }}
-              createNewLabel={(input) => `+ Add "${input}" as new brand`}
-              placeholder="Search or type a brand..."
-            />
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", marginBottom: "4px" }}>
-              Price per {product.unitType} ($)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              style={{ padding: "8px", width: "100%" }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <label>
-              <input
-                type="checkbox"
-                checked={isSpecial}
-                onChange={(e) => setIsSpecial(e.target.checked)}
-                style={{ marginRight: "8px" }}
+          <Field.Root mb={4}>
+            <Field.Label fontWeight="500">Store</Field.Label>
+            {showCreateStore ? (
+              <InlineCreateStore chains={chains} onSuccess={handleStoreCreated} onCancel={() => setShowCreateStore(false)} />
+            ) : (
+              <SearchSelect
+                options={storeOptions}
+                value={storeLocationId}
+                onChange={setStoreLocationId}
+                onCreateNew={() => setShowCreateStore(true)}
+                createNewLabel={() => "+ Create new store"}
+                placeholder="Search for a store…"
               />
-              This is a special / on sale
-            </label>
-          </div>
+            )}
+          </Field.Root>
 
-          {isSpecial && (
-            <div style={{ marginBottom: "12px" }}>
-              <label style={{ display: "block", marginBottom: "4px" }}>
-                Special valid until (optional)
-              </label>
-              <input
-                type="date"
-                value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
-                style={{ padding: "8px" }}
-              />
-            </div>
+          {!showCreateStore && (
+            <>
+              <Field.Root mb={4}>
+                <Field.Label fontWeight="500">
+                  Brand <Text as="span" color="gray.400" fontWeight="400">(optional)</Text>
+                </Field.Label>
+                <SearchSelect
+                  options={brandOptions}
+                  value={brand}
+                  onChange={setBrand}
+                  onCreateNew={(input) => {
+                    setBrand(input)
+                    if (!brands.includes(input)) setBrands([...brands, input].sort())
+                  }}
+                  createNewLabel={(input) => `+ Add "${input}" as new brand`}
+                  placeholder="Search or type a brand…"
+                />
+              </Field.Root>
+
+              <Field.Root mb={4}>
+                <Field.Label fontWeight="500">Price per {product.unitType} ($)</Field.Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </Field.Root>
+
+              <Box mb={5}>
+                <Checkbox.Root
+                  colorPalette="green"
+                  checked={isSpecial}
+                  onCheckedChange={(e) => setIsSpecial(!!e.checked)}
+                >
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control />
+                  <Checkbox.Label>This is a special / on sale</Checkbox.Label>
+                </Checkbox.Root>
+              </Box>
+
+              {errorMessage && <Text color="red.500" fontSize="14px" mb={4}>{errorMessage}</Text>}
+
+              <Flex gap={2.5}>
+                <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+                <Button colorPalette="green" flex={1} onClick={handleSubmit} loading={isSubmitting} loadingText="Saving…">
+                  Save price
+                </Button>
+              </Flex>
+            </>
           )}
-
-          {errorMessage && <p style={{ color: "#ef4444" }}>{errorMessage}</p>}
-
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={onCancel} disabled={isSubmitting}>Cancel</button>
-            <button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
-            </button>
-          </div>
         </>
       )}
-    </div>
+    </Box>
+  )
+}
+
+function ObservationFormSkeleton(): ReactElement {
+  return (
+    <VStack gap={4} align="stretch">
+      {[1, 2, 3].map((i) => (
+        <Box key={i}>
+          <Skeleton height="14px" width="80px" mb={2} />
+          <Skeleton height="40px" borderRadius="8px" />
+        </Box>
+      ))}
+    </VStack>
   )
 }
 
@@ -190,7 +199,6 @@ function InlineCreateStore(props: {
   const handleSubmit = async () => {
     if (!name.trim()) return setErrorMessage("Name cannot be empty")
     if (!suburb.trim()) return setErrorMessage("Suburb cannot be empty")
-
     setIsSubmitting(true)
     setErrorMessage("")
     try {
@@ -210,63 +218,46 @@ function InlineCreateStore(props: {
   }
 
   return (
-    <div style={{ padding: "12px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "#f9fafb" }}>
-      <div style={{ fontWeight: "bold", marginBottom: "10px" }}>New store</div>
+    <Box style={styles.inlineStoreBox}>
+      <Text fontWeight="600" fontSize="15px" mb={3.5}>New store</Text>
 
-      <div style={{ marginBottom: "8px" }}>
-        <label style={{ display: "block", marginBottom: "4px", fontSize: "14px" }}>Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Coles Richmond Traders"
-          style={{ width: "100%", padding: "6px" }}
-          autoFocus
-        />
-      </div>
+      <Field.Root mb={3}>
+        <Field.Label fontSize="13px" fontWeight="500">Name</Field.Label>
+        <Input size="sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coles Richmond Traders" autoFocus />
+      </Field.Root>
 
-      <div style={{ marginBottom: "8px" }}>
-        <label style={{ display: "block", marginBottom: "4px", fontSize: "14px" }}>Chain (optional)</label>
-        <select
-          value={chainId}
-          onChange={(e) => setChainId(e.target.value)}
-          style={{ width: "100%", padding: "6px" }}
-        >
+      <Field.Root mb={3}>
+        <Field.Label fontSize="13px" fontWeight="500">
+          Chain <Text as="span" color="gray.400" fontWeight="400">(optional)</Text>
+        </Field.Label>
+        <select value={chainId} onChange={(e) => setChainId(e.target.value)} style={styles.selectNativeSmall}>
           <option value="">Independent store</option>
-          {chains.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
+          {chains.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-      </div>
+      </Field.Root>
 
-      <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: "block", marginBottom: "4px", fontSize: "14px" }}>Suburb</label>
-          <input
-            type="text"
-            value={suburb}
-            onChange={(e) => setSuburb(e.target.value)}
-            placeholder="e.g. Richmond"
-            style={{ width: "100%", padding: "6px" }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: "4px", fontSize: "14px" }}>State</label>
-          <select value={state} onChange={(e) => setState(e.target.value)} style={{ padding: "6px" }}>
+      <Flex gap={2.5} mb={3}>
+        <Field.Root flex={1}>
+          <Field.Label fontSize="13px" fontWeight="500">Suburb</Field.Label>
+          <Input size="sm" value={suburb} onChange={(e) => setSuburb(e.target.value)} placeholder="e.g. Richmond" />
+        </Field.Root>
+        <Field.Root w="90px">
+          <Field.Label fontSize="13px" fontWeight="500">State</Field.Label>
+          <select value={state} onChange={(e) => setState(e.target.value)} style={styles.selectNativeSmall}>
             <option value="">—</option>
             {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-        </div>
-      </div>
+        </Field.Root>
+      </Flex>
 
-      {errorMessage && <p style={{ color: "#ef4444", fontSize: "14px" }}>{errorMessage}</p>}
+      {errorMessage && <Text color="red.500" fontSize="13px" mb={3}>{errorMessage}</Text>}
 
-      <div style={{ display: "flex", gap: "8px" }}>
-        <button onClick={onCancel} disabled={isSubmitting}>Cancel</button>
-        <button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create store"}
-        </button>
-      </div>
-    </div>
+      <Flex gap={2}>
+        <Button size="sm" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+        <Button size="sm" colorPalette="green" flex={1} onClick={handleSubmit} loading={isSubmitting} loadingText="Creating…">
+          Create store
+        </Button>
+      </Flex>
+    </Box>
   )
 }

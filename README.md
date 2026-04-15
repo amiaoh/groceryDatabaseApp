@@ -1,43 +1,79 @@
-Use dummy login details username: aaa , no password.
-in stores tab, clicking on a row with the store name allows you to edit details. you can also create a new store/location.
-create and edit deals pending. 
+# Grocery Database App
 
+A community-driven app for tracking and comparing grocery prices across stores.
 
+## Features
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+- **Product search** — search for products and see the cheapest stores
+- **Price observations** — log prices manually with store, brand, and special deal info
+- **Store management** — browse, create, and edit store chains and locations
+- **Auth** — Google sign-in via Better Auth
+
+## Tech Stack
+
+| Layer    | Technology                              |
+| -------- | --------------------------------------- |
+| Frontend | React + Vite (TypeScript)               |
+| Backend  | Hono on Node.js (TypeScript)            |
+| Database | PostgreSQL via Neon (serverless driver) |
+| ORM      | Drizzle ORM                             |
+| Auth     | Better Auth                             |
+| Monorepo | pnpm workspaces                         |
+
+## Project Structure
+
+```
+packages/
+  frontend/   # React + Vite app (port 5173)
+  backend/    # Hono API server (port 3000)
+  shared/     # Shared types
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js
+- pnpm (`npm install -g pnpm`)
+
+### Install dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `packages/backend/.env` with:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```
+DATABASE_URL=...
+BETTER_AUTH_SECRET=...
+BETTER_AUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+FRONTEND_URL=http://localhost:5173
+```
 
-## Learn More
+### Run both frontend and backend
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3000
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+The frontend proxies `/api` requests to the backend during development.
 
-## Deploy on Vercel
+### Database
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm --filter @grocery/backend db:generate   # generate migrations
+pnpm --filter @grocery/backend db:migrate    # run migrations
+pnpm --filter @grocery/backend db:studio     # open Drizzle Studio
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-# starterApp
+## Login
+
+Sign in with Google. For local testing without OAuth configured, a dummy account can be used — check with whoever set up the local DB.

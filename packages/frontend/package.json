@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@chakra-ui/react": "^3.34.0",
     "@grocery/shared": "workspace:*",
     "better-auth": "^1.2.0",
     "react": "^18.2.0",
@@ -19,6 +20,7 @@
     "@types/react-dom": "^18",
     "@vitejs/plugin-react": "^4.0.0",
     "typescript": "^5",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
