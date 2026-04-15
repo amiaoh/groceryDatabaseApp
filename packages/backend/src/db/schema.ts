@@ -5,7 +5,6 @@ import {
   doublePrecision,
   boolean,
   timestamp,
-  date,
 } from "drizzle-orm/pg-core"
 
 // Enums
@@ -120,7 +119,6 @@ export const priceRecords = pgTable("price_record", {
   brand: text("brand"),
   price: doublePrecision("price").notNull(),
   isSpecial: boolean("is_special").notNull().default(false),
-  validUntil: date("valid_until"),
   source: priceSourceEnum("source").notNull(),
   recordedAt: timestamp("recorded_at").notNull().defaultNow(),
   productUrl: text("product_url"),

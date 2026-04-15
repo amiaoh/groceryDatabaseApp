@@ -92,7 +92,6 @@ export const priceRecordSchema = z.object({
   brand: z.string().nullable(),
   price: z.number().positive(),
   isSpecial: z.boolean(),
-  validUntil: z.string().nullable(),
   source: priceSourceSchema,
   recordedAt: z.string(),
   productUrl: z.string().nullable(),

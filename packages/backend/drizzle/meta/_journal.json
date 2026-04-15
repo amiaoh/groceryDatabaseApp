@@ -8,6 +8,13 @@
       "when": 1775260236066,
       "tag": "0000_dark_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744992000000,
+      "tag": "0001_drop_valid_until",
+      "breakpoints": true
     }
   ]
 }
