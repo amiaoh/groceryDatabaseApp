@@ -11,3 +11,10 @@ export function createProduct(data: CreateProduct): Promise<Product> {
     body: JSON.stringify(data),
   })
 }
+
+export function updateProduct(id: string, data: Partial<CreateProduct>): Promise<Product> {
+  return apiFetch(`/api/products/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm --filter frontend typecheck)",
+      "Bash(pnpm db:push)",
+      "Bash(pnpm --filter backend typecheck)",
+      "Bash(node -e \"const p=require\\('pnpm/package.json'\\);console.log\\(p.version\\)\")",
+      "Bash(pnpm --version)"
+    ]
+  }
+}

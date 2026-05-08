@@ -5,6 +5,7 @@ import { storeChainsRouter } from "./routes/store-chains.ts"
 import { storeLocationsRouter } from "./routes/store-locations.ts"
 import { productsRouter } from "./routes/products.ts"
 import { priceRecordsRouter } from "./routes/price-records.ts"
+import { userSettingsRouter } from "./routes/user-settings.ts"
 
 const app = new Hono()
 
@@ -24,5 +25,6 @@ app.route("/api/store-chains", storeChainsRouter)
 app.route("/api/store-locations", storeLocationsRouter)
 app.route("/api/products", productsRouter)
 app.route("/api/price-records", priceRecordsRouter)
+app.route("/api/user-settings", userSettingsRouter)
 
 export default app

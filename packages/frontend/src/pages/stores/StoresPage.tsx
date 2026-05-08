@@ -4,6 +4,7 @@ import {
   Card, Skeleton, VStack, Tabs, EmptyState,
 } from "@chakra-ui/react"
 import { StoreChain, StoreLocationWithChain, CreateStoreLocation, CreateStoreChain } from "@grocery/shared"
+import { useColorMode } from "../../lib/color-mode"
 import {
   getStoreLocations, createStoreLocation, updateStoreLocation, deleteStoreLocation,
 } from "../../api/store-locations"
@@ -17,10 +18,11 @@ type ChainFormMode = { type: "create" } | { type: "edit"; chain: StoreChain }
 
 const styles = {
   listCard: { padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 } as React.CSSProperties,
-  selectNative: { width: "100%", height: 40, padding: "0 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 16, fontFamily: "inherit", backgroundColor: "#fff" } as React.CSSProperties,
 }
 
 export function StoresPage(): ReactElement {
+  const { colorMode } = useColorMode()
+  const isDark = colorMode === "dark"
   const [tab, setTab] = useState<Tab>("locations")
   const [locations, setLocations] = useState<StoreLocationWithChain[]>([])
   const [chains, setChains] = useState<StoreChain[]>([])
@@ -48,8 +50,8 @@ export function StoresPage(): ReactElement {
     <Box>
       <Tabs.Root value={tab} onValueChange={(e) => { setTab(e.value as Tab); setLocationForm(null); setChainForm(null) }}>
         <Tabs.List mb={5}>
-          <Tabs.Trigger value="locations">Locations</Tabs.Trigger>
-          <Tabs.Trigger value="chains">Chains</Tabs.Trigger>
+          <Tabs.Trigger value="locations" style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>Locations</Tabs.Trigger>
+          <Tabs.Trigger value="chains" style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>Chains</Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Content value="locations">
@@ -146,6 +148,8 @@ function LocationForm(props: {
 }): ReactElement {
   const { mode, chains, onSuccess, onCancel } = props
   const existing = mode.type === "edit" ? mode.location : null
+  const { colorMode } = useColorMode()
+  const isDark = colorMode === "dark"
 
   const [name, setName] = useState(existing?.name ?? "")
   const [chainId, setChainId] = useState(existing?.chainId ?? "")
@@ -155,10 +159,32 @@ function LocationForm(props: {
   const [errorMessage, setErrorMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const selectedChain = chains.find((c) => c.id === chainId) ?? null
+  const isNational = selectedChain?.isNational ?? false
+
+  const selectStyle: React.CSSProperties = {
+    width: "100%",
+    height: 40,
+    padding: "0 12px",
+    border: `1px solid ${isDark ? "#2d3148" : "#e2e8f0"}`,
+    borderRadius: 8,
+    fontSize: 16,
+    fontFamily: "inherit",
+    backgroundColor: isDark ? "#1e2030" : "#fff",
+    color: isDark ? "#f1f5f9" : "#0f172a",
+  }
+
   const handleSubmit = async () => {
     if (!name.trim()) return setErrorMessage("Name cannot be empty")
-    if (!suburb.trim()) return setErrorMessage("Suburb cannot be empty")
-    const payload: CreateStoreLocation = { name: name.trim(), chainId: chainId || null, suburb: suburb.trim(), state: state || null, address: address.trim() || null }
+    if (!chainId) return setErrorMessage("Chain is required")
+    if (!isNational && !suburb.trim()) return setErrorMessage("Suburb is required")
+    const payload: CreateStoreLocation = {
+      name: name.trim(),
+      chainId,
+      suburb: isNational ? null : suburb.trim(),
+      state: state || null,
+      address: address.trim() || null,
+    }
     setIsSubmitting(true)
     setErrorMessage("")
     try {
@@ -175,40 +201,48 @@ function LocationForm(props: {
   return (
     <Box>
       <Button variant="ghost" size="sm" mb={5} px={0} color="gray.500" onClick={onCancel}>← Back</Button>
-      <Text fontSize="18px" fontWeight="700" letterSpacing="-0.2px" mb={5}>
+      <Text fontSize="18px" fontWeight="700" letterSpacing="-0.2px" mb={5} color={isDark ? "#f1f5f9" : "#0f172a"}>
         {mode.type === "create" ? "Add store" : "Edit store"}
       </Text>
 
       <Field.Root mb={4}>
         <Field.Label fontWeight="500">Name</Field.Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coles Richmond Traders" />
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coles Richmond Traders" color={isDark ? "#f1f5f9" : "#0f172a"} />
       </Field.Root>
 
       <Field.Root mb={4}>
-        <Field.Label fontWeight="500">Chain <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
-        <select value={chainId} onChange={(e) => setChainId(e.target.value)} style={styles.selectNative}>
-          <option value="">Independent store</option>
+        <Field.Label fontWeight="500">Chain</Field.Label>
+        <select value={chainId} onChange={(e) => setChainId(e.target.value)} style={selectStyle}>
+          <option value="">Select a chain…</option>
           {chains.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </Field.Root>
 
-      <Field.Root mb={4}>
-        <Field.Label fontWeight="500">Suburb</Field.Label>
-        <Input value={suburb} onChange={(e) => setSuburb(e.target.value)} placeholder="e.g. Richmond" />
-      </Field.Root>
+      {isNational ? (
+        <Box mb={4} px={3} py={2.5} borderRadius="8px" backgroundColor="blue.50" border="1px solid" borderColor="blue.200">
+          <Text fontSize="13px" color="blue.700">Prices apply nationally — no specific location needed</Text>
+        </Box>
+      ) : (
+        <>
+          <Field.Root mb={4}>
+            <Field.Label fontWeight="500">Suburb</Field.Label>
+            <Input value={suburb} onChange={(e) => setSuburb(e.target.value)} placeholder="e.g. Richmond" color={isDark ? "#f1f5f9" : "#0f172a"} />
+          </Field.Root>
 
-      <Field.Root mb={4}>
-        <Field.Label fontWeight="500">State <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
-        <select value={state} onChange={(e) => setState(e.target.value)} style={styles.selectNative}>
-          <option value="">—</option>
-          {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </Field.Root>
+          <Field.Root mb={4}>
+            <Field.Label fontWeight="500">State <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+            <select value={state} onChange={(e) => setState(e.target.value)} style={selectStyle}>
+              <option value="">—</option>
+              {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </Field.Root>
 
-      <Field.Root mb={5}>
-        <Field.Label fontWeight="500">Address <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
-        <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="e.g. 123 Bridge Rd" />
-      </Field.Root>
+          <Field.Root mb={5}>
+            <Field.Label fontWeight="500">Address <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="e.g. 123 Bridge Rd" color={isDark ? "#f1f5f9" : "#0f172a"} />
+          </Field.Root>
+        </>
+      )}
 
       {errorMessage && <Text color="red.500" fontSize="14px" mb={4}>{errorMessage}</Text>}
 
@@ -257,15 +291,18 @@ function ChainList(props: { chains: StoreChain[]; onEdit: (chain: StoreChain) =>
 function ChainForm(props: { mode: ChainFormMode; onSuccess: () => void; onCancel: () => void }): ReactElement {
   const { mode, onSuccess, onCancel } = props
   const existing = mode.type === "edit" ? mode.chain : null
+  const { colorMode } = useColorMode()
+  const isDark = colorMode === "dark"
 
   const [name, setName] = useState(existing?.name ?? "")
   const [websiteUrl, setWebsiteUrl] = useState(existing?.websiteUrl ?? "")
+  const [isNational, setIsNational] = useState(existing?.isNational ?? false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
     if (!name.trim()) return setErrorMessage("Name cannot be empty")
-    const payload: CreateStoreChain = { name: name.trim(), websiteUrl: websiteUrl.trim() || null }
+    const payload: CreateStoreChain = { name: name.trim(), websiteUrl: websiteUrl.trim() || null, isNational }
     setIsSubmitting(true)
     setErrorMessage("")
     try {
@@ -282,18 +319,36 @@ function ChainForm(props: { mode: ChainFormMode; onSuccess: () => void; onCancel
   return (
     <Box>
       <Button variant="ghost" size="sm" mb={5} px={0} color="gray.500" onClick={onCancel}>← Back</Button>
-      <Text fontSize="18px" fontWeight="700" letterSpacing="-0.2px" mb={5}>
+      <Text fontSize="18px" fontWeight="700" letterSpacing="-0.2px" mb={5} color={isDark ? "#f1f5f9" : "#0f172a"}>
         {mode.type === "create" ? "Add chain" : "Edit chain"}
       </Text>
 
       <Field.Root mb={4}>
         <Field.Label fontWeight="500">Name</Field.Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Woolworths" autoFocus />
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Woolworths" color={isDark ? "#f1f5f9" : "#0f172a"} autoFocus />
+      </Field.Root>
+
+      <Field.Root mb={4}>
+        <Field.Label fontWeight="500">Website URL <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
+        <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.woolworths.com.au" color={isDark ? "#f1f5f9" : "#0f172a"} />
       </Field.Root>
 
       <Field.Root mb={5}>
-        <Field.Label fontWeight="500">Website URL <Text as="span" color="gray.400" fontWeight="400">(optional)</Text></Field.Label>
-        <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.woolworths.com.au" />
+        <Flex align="center" gap={2}>
+          <input
+            type="checkbox"
+            id="isNational"
+            checked={isNational}
+            onChange={(e) => setIsNational(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: "pointer" }}
+          />
+          <Field.Label htmlFor="isNational" fontWeight="500" mb={0} cursor="pointer">
+            Same prices nationally (e.g. ALDI)
+          </Field.Label>
+        </Flex>
+        <Text fontSize="12px" color="gray.400" mt={1} ml={6}>
+          When enabled, store locations for this chain won't require a suburb
+        </Text>
       </Field.Root>
 
       {errorMessage && <Text color="red.500" fontSize="14px" mb={4}>{errorMessage}</Text>}

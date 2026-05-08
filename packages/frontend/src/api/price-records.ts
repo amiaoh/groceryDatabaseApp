@@ -1,8 +1,11 @@
-import { CheapestStore, CreatePriceRecord, PriceRecord } from "@grocery/shared"
+import { CheapestStoresResponse, CreatePriceRecord, PriceRecord } from "@grocery/shared"
 import { apiFetch } from "./client"
 
-export function getCheapestStores(productId: string): Promise<CheapestStore[]> {
-  return apiFetch(`/api/price-records/cheapest?productId=${productId}`)
+export function getCheapestStores(productId: string, force = false, noScrape = false): Promise<CheapestStoresResponse> {
+  const params = new URLSearchParams({ productId })
+  if (force) params.set("force", "true")
+  if (noScrape) params.set("noScrape", "true")
+  return apiFetch(`/api/price-records/cheapest?${params}`)
 }
 
 export function getBrands(): Promise<string[]> {

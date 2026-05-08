@@ -8,13 +8,40 @@ import { getStoreLocations, createStoreLocation } from "../../api/store-location
 import { getStoreChains } from "../../api/store-chains"
 import { getBrands, createPriceRecord } from "../../api/price-records"
 import { SearchSelect } from "../../components/SearchSelect"
+import { useColorMode } from "../../lib/color-mode"
 
 const AU_STATES = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]
 
-const styles = {
-  inlineStoreBox: { padding: "16px", border: "1.5px solid #e2e8f0", borderRadius: "14px", backgroundColor: "#f8fafc" } as React.CSSProperties,
-  selectNative: { width: "100%", height: 40, padding: "0 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 16, fontFamily: "inherit", backgroundColor: "#fff" } as React.CSSProperties,
-  selectNativeSmall: { height: 36, padding: "0 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 15, fontFamily: "inherit", backgroundColor: "#fff" } as React.CSSProperties,
+function makeStyles(isDark: boolean) {
+  return {
+    inlineStoreBox: {
+      padding: "16px",
+      border: `1.5px solid ${isDark ? "#2d3148" : "#e2e8f0"}`,
+      borderRadius: "14px",
+      backgroundColor: isDark ? "#1a1d2e" : "#f8fafc",
+    } as React.CSSProperties,
+    selectNative: {
+      width: "100%",
+      height: 40,
+      padding: "0 12px",
+      border: `1px solid ${isDark ? "#2d3148" : "#e2e8f0"}`,
+      borderRadius: 8,
+      fontSize: 16,
+      fontFamily: "inherit",
+      backgroundColor: isDark ? "#1e2030" : "#fff",
+      color: isDark ? "#f1f5f9" : "#0f172a",
+    } as React.CSSProperties,
+    selectNativeSmall: {
+      height: 36,
+      padding: "0 10px",
+      border: `1px solid ${isDark ? "#2d3148" : "#e2e8f0"}`,
+      borderRadius: 8,
+      fontSize: 15,
+      fontFamily: "inherit",
+      backgroundColor: isDark ? "#1e2030" : "#fff",
+      color: isDark ? "#f1f5f9" : "#0f172a",
+    } as React.CSSProperties,
+  }
 }
 
 export function AddObservation(props: {
@@ -23,6 +50,8 @@ export function AddObservation(props: {
   onCancel: () => void
 }): ReactElement {
   const { product, onSuccess, onCancel } = props
+  const { colorMode } = useColorMode()
+  const isDark = colorMode === "dark"
   const [storeLocations, setStoreLocations] = useState<StoreLocationWithChain[]>([])
   const [chains, setChains] = useState<StoreChain[]>([])
   const [brands, setBrands] = useState<string[]>([])
@@ -98,7 +127,7 @@ export function AddObservation(props: {
           <Field.Root mb={4}>
             <Field.Label fontWeight="500">Store</Field.Label>
             {showCreateStore ? (
-              <InlineCreateStore chains={chains} onSuccess={handleStoreCreated} onCancel={() => setShowCreateStore(false)} />
+              <InlineCreateStore chains={chains} isDark={isDark} onSuccess={handleStoreCreated} onCancel={() => setShowCreateStore(false)} />
             ) : (
               <SearchSelect
                 options={storeOptions}
@@ -139,6 +168,7 @@ export function AddObservation(props: {
                   placeholder="0.00"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
+                  color={isDark ? "#f1f5f9" : "#0f172a"}
                 />
               </Field.Root>
 
@@ -185,10 +215,12 @@ function ObservationFormSkeleton(): ReactElement {
 
 function InlineCreateStore(props: {
   chains: StoreChain[]
+  isDark: boolean
   onSuccess: (location: StoreLocationWithChain) => void
   onCancel: () => void
 }): ReactElement {
-  const { chains, onSuccess, onCancel } = props
+  const { chains, isDark, onSuccess, onCancel } = props
+  const styles = makeStyles(isDark)
   const [name, setName] = useState("")
   const [chainId, setChainId] = useState("")
   const [suburb, setSuburb] = useState("")
@@ -219,11 +251,11 @@ function InlineCreateStore(props: {
 
   return (
     <Box style={styles.inlineStoreBox}>
-      <Text fontWeight="600" fontSize="15px" mb={3.5}>New store</Text>
+      <Text fontWeight="600" fontSize="15px" mb={3.5} color={isDark ? "#f1f5f9" : "#0f172a"}>New store</Text>
 
       <Field.Root mb={3}>
         <Field.Label fontSize="13px" fontWeight="500">Name</Field.Label>
-        <Input size="sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coles Richmond Traders" autoFocus />
+        <Input size="sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coles Richmond Traders" color={isDark ? "#f1f5f9" : "#0f172a"} autoFocus />
       </Field.Root>
 
       <Field.Root mb={3}>
@@ -239,7 +271,7 @@ function InlineCreateStore(props: {
       <Flex gap={2.5} mb={3}>
         <Field.Root flex={1}>
           <Field.Label fontSize="13px" fontWeight="500">Suburb</Field.Label>
-          <Input size="sm" value={suburb} onChange={(e) => setSuburb(e.target.value)} placeholder="e.g. Richmond" />
+          <Input size="sm" value={suburb} onChange={(e) => setSuburb(e.target.value)} placeholder="e.g. Richmond" color={isDark ? "#f1f5f9" : "#0f172a"} />
         </Field.Root>
         <Field.Root w="90px">
           <Field.Label fontSize="13px" fontWeight="500">State</Field.Label>

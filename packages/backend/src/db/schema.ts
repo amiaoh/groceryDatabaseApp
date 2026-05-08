@@ -5,6 +5,7 @@ import {
   doublePrecision,
   boolean,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core"
 
 // Enums
@@ -89,13 +90,14 @@ export const storeChains = pgTable("store_chain", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   websiteUrl: text("website_url"),
+  isNational: boolean("is_national").notNull().default(false),
 })
 
 export const storeLocations = pgTable("store_location", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   chainId: text("chain_id").references(() => storeChains.id),
-  suburb: text("suburb").notNull(),
+  suburb: text("suburb"),
   state: text("state"),
   address: text("address"),
 })
@@ -107,6 +109,17 @@ export const products = pgTable("product", {
   category: categoryEnum("category"),
   packageDetail: text("package_detail"),
 })
+
+export const userDefaultStoreTargets = pgTable(
+  "user_default_store_target",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+    chainId: text("chain_id").notNull().references(() => storeChains.id, { onDelete: "cascade" }),
+    storeLocationId: text("store_location_id").references(() => storeLocations.id, { onDelete: "set null" }),
+  },
+  (t) => [unique().on(t.userId, t.chainId)]
+)
 
 export const priceRecords = pgTable("price_record", {
   id: text("id").primaryKey(),
