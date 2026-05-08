@@ -2,7 +2,7 @@
 // Inserts the 3 default chains and 2 default store locations if they don't exist.
 import "dotenv/config"
 import { db } from "./index.ts"
-import { storeChains, storeLocations } from "./schema.ts"
+import { storeChains, storeLocations, authUsers } from "./schema.ts"
 import { eq } from "drizzle-orm"
 
 async function upsertChain(name: string, websiteUrl: string | null, isNational: boolean) {
@@ -44,6 +44,20 @@ async function seed() {
   await upsertLocation("Woolworths Abbotsford", woolworths.id, "Abbotsford", "VIC")
   await upsertLocation("Coles Richmond Traders", coles.id, "Richmond", "VIC")
   await upsertLocation("Chemist Warehouse", chemistWarehouse.id, null, null)
+
+  const now = new Date()
+  await db
+    .insert(authUsers)
+    .values({
+      id: "dev-user",
+      name: "Dev User",
+      email: "dev@local",
+      emailVerified: true,
+      image: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing()
 
   console.log("Seed complete")
   process.exit(0)

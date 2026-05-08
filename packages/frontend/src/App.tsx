@@ -43,7 +43,12 @@ function MoonIcon() {
 }
 
 function App(): ReactElement {
-  const { data: session, isPending } = authClient.useSession()
+  const { data: sessionData, isPending: sessionPending } = authClient.useSession()
+  const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === "true"
+  const session = bypassAuth
+    ? ({ user: { id: "dev-user", name: "Dev User", email: "dev@local" } } as NonNullable<typeof sessionData>)
+    : sessionData
+  const isPending = bypassAuth ? false : sessionPending
   const { colorMode, toggleColorMode } = useColorMode()
   const isDark = colorMode === "dark"
 
