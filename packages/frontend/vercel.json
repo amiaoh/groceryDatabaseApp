@@ -1,3 +1,4 @@
 {
+  "installCommand": "pnpm install",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

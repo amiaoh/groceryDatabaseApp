@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @grocery/backend --filter @grocery/frontend dev",
     "build": "pnpm --filter './packages/*' build",
-    "typecheck": "pnpm --filter './packages/*' typecheck"
+    "typecheck": "pnpm --filter './packages/*' typecheck",
+    "deploy": "mkdir -p .vercel && cp packages/frontend/.vercel/project.json .vercel/project.json && vercel --prod && cp packages/backend/.vercel/project.json .vercel/project.json && vercel --prod && rm .vercel/project.json"
   },
   "devDependencies": {
     "typescript": "^5"

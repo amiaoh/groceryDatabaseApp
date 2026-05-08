@@ -77,3 +77,52 @@ pnpm --filter @grocery/backend db:studio     # open Drizzle Studio
 ## Login
 
 Sign in with Google. For local testing without OAuth configured, a dummy account can be used — check with whoever set up the local DB.
+
+## Deployment
+
+The frontend and backend are deployed as separate Vercel projects from the repo root.
+
+### First-time setup
+
+Link each package to its Vercel project:
+
+```bash
+cd packages/frontend && vercel link   # select grocery-database-app-frontend
+cd ../backend && vercel link          # select grocery-database-app-backend
+```
+
+### Deploy to production
+
+```bash
+pnpm run deploy
+```
+
+This deploys frontend then backend sequentially. If the backend deploy is canceled (Vercel race condition), run it again — it will succeed.
+
+### Projects
+
+| Package  | Vercel project                  | URL                                              |
+| -------- | ------------------------------- | ------------------------------------------------ |
+| Frontend | grocery-database-app-frontend   | https://grocery-database-app-frontend.vercel.app |
+| Backend  | grocery-database-app-backend    | https://grocery-database-app-backend.vercel.app  |
+
+### Environment variables
+
+Set these in each project's Vercel dashboard under **Settings → Environment Variables**.
+
+**Backend:**
+
+```
+DATABASE_URL=...
+BETTER_AUTH_SECRET=...
+BETTER_AUTH_URL=https://grocery-database-app-backend.vercel.app
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+FRONTEND_URL=https://grocery-database-app-frontend.vercel.app
+```
+
+**Frontend:**
+
+```
+VITE_API_BASE_URL=https://grocery-database-app-backend.vercel.app
+```
