@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
+    "vercel-build": "esbuild api/index.ts --bundle --platform=node --target=node22 --format=esm --external:puppeteer-core --external:fsevents --outfile=api/index.js",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
@@ -31,6 +32,7 @@
     "@types/pg": "^8.20.0",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.4",
+    "esbuild": "^0.25.0",
     "pg": "^8.20.0",
     "postgres": "^3.4.9",
     "tsx": "^4.19.0",
