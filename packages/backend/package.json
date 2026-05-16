@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
-    "vercel-build": "esbuild api/index.ts --bundle --platform=node --target=node22 --format=esm --external:puppeteer-core --external:fsevents --outfile=api/index.js",
+    "vercel-build": "esbuild src/vercel-entry.ts --bundle --platform=node --target=node22 --format=esm --external:puppeteer-core --external:fsevents --outfile=api/index.js",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
