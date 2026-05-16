@@ -9,10 +9,15 @@ import { userSettingsRouter } from "./routes/user-settings.ts"
 
 const app = new Hono()
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL?.replace(/\/$/, ""),
+  "http://localhost:5173",
+].filter(Boolean) as string[]
+
 app.use(
   "/api/*",
   cors({
-    origin: (process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, ""),
+    origin: (origin) => (allowedOrigins.includes(origin) ? origin : null),
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,

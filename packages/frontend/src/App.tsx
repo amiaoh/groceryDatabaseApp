@@ -124,7 +124,10 @@ function App(): ReactElement {
           size="lg"
           mt={3}
           px={8}
-          onClick={() => authClient.signIn.social({ provider: "google", callbackURL: window.location.origin })}
+          onClick={async () => {
+            const { error } = await authClient.signIn.social({ provider: "google", callbackURL: window.location.origin })
+            if (error) console.error("Google sign-in failed:", error)
+          }}
         >
           Sign in with Google
         </Button>

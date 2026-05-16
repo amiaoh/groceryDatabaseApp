@@ -4,7 +4,11 @@ import { db } from "./db/index.ts"
 import * as schema from "./db/schema.ts"
 
 export const auth = betterAuth({
-  trustedOrigins: [(process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, "")],
+  baseURL: (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, ""),
+  trustedOrigins: [
+    process.env.FRONTEND_URL?.replace(/\/$/, "") ?? "http://localhost:5173",
+    "http://localhost:5173",
+  ],
   advanced: {
     defaultCookieAttributes: {
       sameSite: "none",
